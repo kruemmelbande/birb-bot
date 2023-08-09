@@ -43,21 +43,21 @@ except Exception as e:
 async def on_ready():
     print(f'We have logged in as {bot.user}')
 
-@bot.slash_command(name="givetestrole", description="Gives you the testrole")
-async def givetestrole(ctx):
-    print("givetestrole")
-    await ctx.respond("givetestrole")
+@bot.slash_command(name="bonkme", description="Gives you the NSFW role")
+async def bonkme(ctx):
+    await ctx.respond("*bonk*, you now have access to the bonk worthy channels")
     #toggle role
-    role=discord.utils.get(ctx.guild.roles, name="testrole")
+    role=discord.utils.get(ctx.guild.roles, name="bonk")
     if role in ctx.author.roles:
         await ctx.author.remove_roles(role)
     else:
         await ctx.author.add_roles(role)
+        print(f"Added role to {ctx.author.name}")
 
-@bot.slash_command(name="test", description="Test command")
-async def test(ctx, inputstring: str):
-    print(inputstring)
-    await ctx.respond(f"Test {ctx.author.mention}, you said: {inputstring}")
-    #get back the message, that the user sent
+# @bot.slash_command(name="test", description="Test command")
+# async def test(ctx, inputstring: str):
+#     print(inputstring)
+#     await ctx.respond(f"Test {ctx.author.mention}, you said: {inputstring}")
+#     #get back the message, that the user sent
     
 bot.run(token)
