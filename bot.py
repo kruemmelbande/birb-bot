@@ -39,21 +39,20 @@ except Exception as e:
     print(e)
     exit
 
-#just do a hello world as a /command
-#to set the command, that the bot should listen to, use the decorator
-@discord.slash_command(guild_ids=[config["guildID"]],description="Test command2")
-@default_permissions(manage_messages=True)
-async def hello(ctx):
-    await ctx.send("Hello World!")
-
-
 @bot.event
 async def on_ready():
     print(f'We have logged in as {bot.user}')
 
+@bot.slash_command(name="givetestrole", description="Gives you the testrole")
+async def givetestrole(ctx):
+    print("givetestrole")
+    await ctx.respond("givetestrole")
+    await ctx.author.add_roles(ctx.guild.get_role(1138741746814177391))
+
 @bot.slash_command(name="test", description="Test command")
-async def test(ctx):
-    await ctx.respond(f"Test {ctx.author.mention}")
+async def test(ctx, inputstring: str):
+    print(inputstring)
+    await ctx.respond(f"Test {ctx.author.mention}, you said: {inputstring}")
     #get back the message, that the user sent
     
 bot.run(token)
