@@ -47,7 +47,12 @@ async def on_ready():
 async def givetestrole(ctx):
     print("givetestrole")
     await ctx.respond("givetestrole")
-    await ctx.author.add_roles(ctx.guild.get_role(1138741746814177391))
+    #toggle role
+    role=discord.utils.get(ctx.guild.roles, name="testrole")
+    if role in ctx.author.roles:
+        await ctx.author.remove_roles(role)
+    else:
+        await ctx.author.add_roles(role)
 
 @bot.slash_command(name="test", description="Test command")
 async def test(ctx, inputstring: str):
