@@ -45,14 +45,15 @@ async def on_ready():
 
 @bot.slash_command(name="bonkme", description="Gives you the NSFW role")
 async def bonkme(ctx):
-    await ctx.respond("*bonk*, you now have access to the bonk worthy channels")
-    #toggle role
-    role=discord.utils.get(ctx.guild.roles, name="bonk")
+    role=discord.utils.get(ctx.guild.roles, name="Bonk")
+
     if role in ctx.author.roles:
         await ctx.author.remove_roles(role)
+        await ctx.respond("*unbonks*, no more horny for you!", ephemeral=True) #ephemeral=True means that only the user who used the command can see the response
     else:
         await ctx.author.add_roles(role)
         print(f"Added role to {ctx.author.name}")
+        await ctx.respond("*bonk*, you now have access to the bonk worthy channels", ephemeral=True) #ephemeral=True means that only the user who used the command can see the response
 
 # @bot.slash_command(name="test", description="Test command")
 # async def test(ctx, inputstring: str):
