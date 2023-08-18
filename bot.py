@@ -20,18 +20,19 @@ try:
     with open("config.json","r") as f:
         config=json.load(f)
 except Exception as e:
-    print("Unable to load config")
-    print(e)
+    print("Unable to load config", flush=True)
+    print(e, flush=True)
     exit()
 try:
     #parse config
     token=config["token"]
 except Exception as e:
-    print("Error while parsing config")
+    print("Error while parsing config", flush=True)
     print(e)
     exit
     
 def getUserVotes():
+    global users
     votes={}
     for user in users:
         if not users[user]["id"] in votes:
@@ -42,29 +43,30 @@ def getUserVotes():
             votes[users[user]["votesFor"]]+=1
         else:
             votes[users[user]["votesFor"]]=1
+    print("votes: ", votes, flush=True)
     return votes
 
 async def rebuildHirearchy(ctx):
     global users
     votes=getUserVotes()
-    print("votes: ", votes)
-    print("users: ", users)
+    print("votes: ", votes, flush=True)
+    print("users: ", users, flush=True)
     for user in users:
         #if a user has more than 2 votes, they become a pack leader, and everybody who voted for them becomes owned by them.
         #no more than 5 users can join a pack
         currentUser=discord.utils.get(ctx.guild.members, id=users[user]["id"])
         userRoles=[role.name for role in currentUser.roles]
-        print(f"Checking {currentUser.name} with roles {userRoles}")
+        print(f"Checking {currentUser.name} with roles {userRoles}, flush=True")
         if "Bot Override" in userRoles:
-            print("User is a bot override, skipping")
+            print("User is a bot override, skipping", flush=True)
             continue
-        print(f"User has {votes[currentUser.id]} votes")
+        print(f"User has {votes[currentUser.id]} votes", flush=True)
         if votes[currentUser.id]>2:
             #user is a pack leader
             #check if they already have the role
             if not "Pack Leader" in userRoles:
                 await currentUser.add_roles(discord.utils.get(ctx.guild.roles, name="Pack Leader"))
-                print(f"Added role to {currentUser.name}")
+                print(f"Added role to {currentUser.name}", flush=True)
             for userb in users:
                 if users[userb]["votesFor"]==users[user]["id"]:
                     users[userb]["isOwned"]=True
@@ -74,7 +76,7 @@ async def rebuildHirearchy(ctx):
             #check if they have the role
             if "Pack Leader" in userRoles:
                 await ctx.author.remove_roles(discord.utils.get(ctx.guild.roles, name="Pack Leader"))
-                print(f"Removed role from {currentUser.name}")
+                print(f"Removed role from {currentUser.name}", flush=True)
                 for userb in users:
                     if users[userb]["owner"]==users[user]["id"]:
                         users[userb]["isOwned"]=False
@@ -87,8 +89,8 @@ def loadUserdb():
         with open("userdb.json","r") as f:
             users=json.load(f)
     except Exception as e:
-        print("Unable to load userdb")
-        print(e)
+        print("Unable to load userdb", flush=True)
+        print(e, flush=True)
         exit()
     return users
 
@@ -97,15 +99,15 @@ def saveUserdb():
     try:
         with open("userdb.json","w") as f:
             json.dump(users,f,indent=4)
-            print("Saved userdb")
+            print("Saved userdb", flush=True)
     except Exception as e:
-        print("Unable to save userdb")
-        print(e)
+        print("Unable to save userdb", flush=True)
+        print(e, flush=True)
         exit()
 
 @bot.event
 async def on_ready():
-    print(f'We have logged in as {bot.user}')
+    print(f'We have logged in as {bot.user}', flush=True)
     loadUserdb()
 
 # @bot.slash_command(name="testcommand", description="This command is ONLY FOR TESTING. DO NOT USE THIS, OR YOU WILL BE BANNED.")
@@ -123,29 +125,30 @@ async def bonkme(ctx):
         await ctx.respond("*unbonks*, no more horny for you!", ephemeral=True) #ephemeral=True means that only the user who used the command can see the response
     else:
         await ctx.author.add_roles(role)
-        print(f"Added role to {ctx.author.name}")
+        print(f"Added role to {ctx.author.name}", flush=True)
         await ctx.respond("*bonk*, you now have access to the bonk worthy channels", ephemeral=True) #ephemeral=True means that only the user who used the command can see the response
 
 @bot.slash_command(name="vote", description="Vote for a user")
 async def vote(ctx, user: discord.Member):
     global users
+    
+    votes=getUserVotes()
     #check if user is in database
     returnstring=""
-    votes=getUserVotes()
     for usera in ctx.guild.members:
         if user.id == usera.id:
             targetUser=usera
-            print("User found")
+            print("User found", flush=True)
             break
     else:
-        print(user.id)
-        print([user.id for user in ctx.guild.members]) 
+        print(user.id, flush=True)
+        print([user.id for user in ctx.guild.members], flush=True) 
         await ctx.respond("User not found", ephemeral=True)
         return
     if not str(targetUser.id) in users:
-        print("User not in database")
-        print([i for i in users])
-        print(targetUser.id)
+        print("User not in database", flush=True)
+        print([i for i in users], flush=True)
+        print(targetUser.id, flush=True)
         newUser=userTemplate.copy()
         newUser["id"]=targetUser.id
         users[str(targetUser.id)]=newUser
@@ -159,8 +162,10 @@ async def vote(ctx, user: discord.Member):
     if not str(voter.id) in users:
         users[str(voter.id)]=userTemplate.copy()
         users[str(voter.id)]["id"]=voter.id
-        print("Voter not in database")
+        print("Voter not in database", flush=True)
         saveUserdb()
+    votes=getUserVotes()
+
     #check if the person that gets voted is already at the vote limit
     if votes[votee.id]>=5:
         await ctx.respond(f"{ctx.author.mention}, {targetUser.mention} already has the maximum amount of votes", ephemeral=True)
@@ -180,10 +185,10 @@ async def vote(ctx, user: discord.Member):
         users[str(voter.id)]["isVoting"]=True
         saveUserdb()
         users[str(voter.id)]["votesFor"]=targetUser.id
-        print(voter)
-        print(voter.id)
+        print(voter, flush=True)
+        print(voter.id, flush=True)
     saveUserdb()
-    print("Rebuilding hirearchy")
+    print("Rebuilding hirearchy", flush=True)
     await rebuildHirearchy(ctx)
     saveUserdb()
     await ctx.respond(returnstring, ephemeral=True)
