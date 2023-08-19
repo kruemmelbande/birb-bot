@@ -1,7 +1,7 @@
 import discord, json
 from discord import default_permissions
 from sys import exit
-
+import datetime
 intents=discord.Intents.all()
 bot = discord.Bot(intents=intents)
 
@@ -48,6 +48,8 @@ def getUserVotes():
 
 async def rebuildHirearchy(ctx):
     global users
+    now=datetime.datetime.now()
+    print(f"[{now}] Rebuilding hirearchy because of {ctx.author.name}", flush=True)
     votes=getUserVotes()
     print("votes: ", votes, flush=True)
     print("users: ", users, flush=True)
@@ -81,6 +83,15 @@ async def rebuildHirearchy(ctx):
                     if users[userb]["owner"]==users[user]["id"]:
                         users[userb]["isOwned"]=False
                         users[userb]["owner"]=0
+
+def getUserName(ctx, id):
+    for user in ctx.guild.members:
+        if user.id==id:
+            #get the user nickname and username
+            if user.display_name==user.name:
+                return user.name
+            return f"{user.display_name} ({user.name})"
+    return "User not found"
         
 users={}
 def loadUserdb():
@@ -99,7 +110,7 @@ def saveUserdb():
     try:
         with open("userdb.json","w") as f:
             json.dump(users,f,indent=4)
-            print("Saved userdb", flush=True)
+            print(f"[{datetime.datetime.now()}] Saved userdb", flush=True)
     except Exception as e:
         print("Unable to save userdb", flush=True)
         print(e, flush=True)
@@ -116,8 +127,31 @@ async def on_ready():
 #     await ctx.respond("Rebuilt hirearchy", ephemeral=True)
 #     return
 
+
+@bot.slash_command(name="hirearchy", description="Shows the current hirearchy")
+async def hirearchy(ctx):
+    print(f"[{datetime.datetime.now()}] {ctx.author.name} used hirearchy", flush=True)
+    votes=getUserVotes()
+    leaders=[user for user in votes if votes[user]>=2]
+    singles=[user for user in votes if votes[user]==1]
+    returnstring="####Pack Leaders###\n"
+    for leader in leaders:
+        returnstring+=discord.utils.get(ctx.guild.members, id=leader).name+"\n"
+        for user in users:
+            if users[user]["owner"]==leader:
+                returnstring+="  - "+discord.utils.get(ctx.guild.members, id=users[user]["id"]).name+"\n"
+        returnstring += "\n"
+    returnstring+="####Single Votes###"
+    for single in singles:
+        for user in users:
+            if users[user]["votesFor"]==single:
+                returnstring+= "\n" + getUserName(ctx, users[user]["id"]) + " => " + getUserName(ctx, users[user]["votesFor"])
+
+    await ctx.respond(returnstring, ephemeral=True)
+    
 @bot.slash_command(name="bonkme", description="Gives you the NSFW role")
 async def bonkme(ctx):
+    print(f"[{datetime.datetime.now()}] {ctx.author.name} used bonkme", flush=True)
     role=discord.utils.get(ctx.guild.roles, name="Bonk")
 
     if role in ctx.author.roles:
@@ -131,7 +165,7 @@ async def bonkme(ctx):
 @bot.slash_command(name="vote", description="Vote for a user")
 async def vote(ctx, user: discord.Member):
     global users
-    
+    print(f"[{datetime.datetime.now()}] {ctx.author.name} used vote", flush=True)
     votes=getUserVotes()
     #check if user is in database
     returnstring=""
