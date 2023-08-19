@@ -139,6 +139,25 @@ async def on_ready():
     print(f'We have logged in as {bot.user}', flush=True)
     loadUserdb()
 
+@bot.slash_command(name="kickfrompack", description="Kick a user from your pack")
+async def kickfrompack(ctx, user: discord.Member):
+    global users
+    print(f"[{datetime.datetime.now()}] {ctx.author.name} used kickfrompack", flush=True)
+    #am i a pack leader?
+    if not users[str(ctx.author.id)]["isOwner"]:
+        await ctx.respond("You are not a pack leader", ephemeral=True)
+        return
+    #is the user owned by me?
+    if not users[str(user.id)]["votesFor"]==ctx.author.id:
+        await ctx.respond("You do not own this user", ephemeral=True)
+        return
+    #remove the user from my pack
+    users[str(user.id)]["isOwned"]=False
+    users[str(user.id)]["votesFor"]=0
+    users[str(user.id)]["isVoting"]=False
+    await rebuildHirearchy(ctx)
+    saveUserdb()
+    await ctx.respond(f"{user.mention} has been kicked from your pack", ephemeral=True)
 @bot.slash_command(name="buildhirearchy", description="This command is for internal use only.")
 async def buildHirearchy(ctx):
     if not isElivated(ctx):
