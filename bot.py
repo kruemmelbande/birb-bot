@@ -12,7 +12,7 @@ userTemplate={
     "votesFor":0,
     "isVoting":False,
     "isOwned":False,
-    "owner":0
+    "isOwner":False
 }
  
 try:
@@ -42,6 +42,7 @@ def getUserVotes():
     global users
     votes={}
     for user in users:
+        
         if not users[user]["id"] in votes:
             votes[users[user]["id"]]=0
         if users[user]["isVoting"]==False:
@@ -51,6 +52,7 @@ def getUserVotes():
         else:
             votes[users[user]["votesFor"]]=1
     print("votes: ", votes, flush=True)
+    votes[0]=0
     return votes
 
 async def rebuildHirearchy(ctx):
@@ -61,6 +63,15 @@ async def rebuildHirearchy(ctx):
     print("votes: ", votes, flush=True)
     print("users: ", users, flush=True)
     for user in users:
+        if votes[users[user]["id"]]>=2:
+            print(f"{user} is a pack leader", flush=True)
+            users[user]["isOwner"]=True
+            users[user]["isOwned"]=False
+            users[user]["votesFor"]=0
+            users[user]["isVoting"]=False
+        if votes[users[user]["votesFor"]]>=2:
+            users[user]["isOwned"]=True
+            users[user]["isOwner"]=False
         #if a user has more than 2 votes, they become a pack leader, and everybody who voted for them becomes owned by them.
         #no more than 5 users can join a pack
         currentUser=discord.utils.get(ctx.guild.members, id=users[user]["id"])
@@ -70,7 +81,7 @@ async def rebuildHirearchy(ctx):
             print("User is a bot override, skipping", flush=True)
             continue
         print(f"User has {votes[currentUser.id]} votes", flush=True)
-        if votes[currentUser.id]>2:
+        if votes[currentUser.id]>=2:
             #user is a pack leader
             #check if they already have the role
             if not "Pack Leader" in userRoles:
@@ -90,7 +101,7 @@ async def rebuildHirearchy(ctx):
                     if users[userb]["owner"]==users[user]["id"]:
                         users[userb]["isOwned"]=False
                         users[userb]["owner"]=0
-
+    saveUserdb()
 def getUserName(ctx, id):
     for user in ctx.guild.members:
         if user.id==id:
@@ -150,8 +161,8 @@ async def hirearchy(ctx):
     for leader in leaders:
         returnstring+=discord.utils.get(ctx.guild.members, id=leader).name+"\n"
         for user in users:
-            if users[user]["owner"]==leader:
-                returnstring+="  - "+discord.utils.get(ctx.guild.members, id=users[user]["id"]).name+"\n"
+            if users[user]["votesFor"]==leader:
+                returnstring+= "  -" + getUserName(ctx, users[user]["id"]) + "\n"
         returnstring += "\n"
     returnstring+="####Single Votes###"
     for single in singles:
@@ -211,7 +222,15 @@ async def vote(ctx, user: discord.Member):
         print("Voter not in database", flush=True)
         saveUserdb()
     votes=getUserVotes()
-
+    if users[str(votee.id)]["isOwned"]==True:
+        returnstring="You cannot vote for a user who is owned by another user"
+        await ctx.respond(returnstring, ephemeral=True)
+        return
+    if users[str(voter.id)]["isOwner"]==True:
+        returnstring="You cannot vote for another user, while you own a user yet."
+        await ctx.respond(returnstring, ephemeral=True)
+        return
+    
     #check if the person that gets voted is already at the vote limit
     if votes[votee.id]>=5:
         await ctx.respond(f"{ctx.author.mention}, {targetUser.mention} already has the maximum amount of votes", ephemeral=True)
