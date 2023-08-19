@@ -31,6 +31,13 @@ except Exception as e:
     print(e)
     exit
     
+def isElivated(ctx):
+    #check if the user has the admin role
+    for role in ctx.author.roles:
+        if role.name=="Bot Leader":
+            return True
+    return False
+
 def getUserVotes():
     global users
     votes={}
@@ -121,11 +128,16 @@ async def on_ready():
     print(f'We have logged in as {bot.user}', flush=True)
     loadUserdb()
 
-# @bot.slash_command(name="testcommand", description="This command is ONLY FOR TESTING. DO NOT USE THIS, OR YOU WILL BE BANNED.")
-# async def ifyouusethisiwillbanyouthisisforadmins(ctx):
-#     await rebuildHirearchy(ctx)
-#     await ctx.respond("Rebuilt hirearchy", ephemeral=True)
-#     return
+@bot.slash_command(name="buildhirearchy", description="This command is for internal use only.")
+async def buildHirearchy(ctx):
+    if not isElivated(ctx):
+        await ctx.respond("You do not have permission to use this command", ephemeral=True)
+        return
+    print(f"[{datetime.datetime.now()}] {ctx.author.name} used rebuildhirearchy", flush=True)
+    await rebuildHirearchy(ctx)
+    saveUserdb()
+    await ctx.respond("Hirearchy rebuilt", ephemeral=True)
+    await hirearchy(ctx)
 
 
 @bot.slash_command(name="hirearchy", description="Shows the current hirearchy")
