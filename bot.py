@@ -38,6 +38,12 @@ def isElivated(ctx):
             return True
     return False
 
+def hasRole(ctx, role):
+    for rolea in ctx.author.roles:
+        if rolea.name==role:
+            return True
+    return False
+
 def getUserVotes():
     global users
     votes={}
@@ -196,6 +202,14 @@ async def bonkme(ctx):
     print(f"[{datetime.datetime.now()}] {ctx.author.name} used bonkme", flush=True)
     role=discord.utils.get(ctx.guild.roles, name="Bonk")
 
+    if hasRole(ctx, "Anti Horny Tabs"):
+        await ctx.respond("You do not have permission to use this command", ephemeral=True)
+        print(f"{ctx.author.name} tried to get bonk role without permission", flush=True)
+        if role in ctx.author.roles:
+            await ctx.author.remove_roles(role)
+        return
+
+    
     if role in ctx.author.roles:
         await ctx.author.remove_roles(role)
         await ctx.respond("*unbonks*, no more horny for you!", ephemeral=True) #ephemeral=True means that only the user who used the command can see the response
