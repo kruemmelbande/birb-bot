@@ -2,6 +2,7 @@ import discord, json
 from discord import default_permissions
 from sys import exit
 import datetime
+import asyncio
 intents=discord.Intents.all()
 bot = discord.Bot(intents=intents)
 
@@ -63,12 +64,23 @@ def getUserVotes():
 
 async def rebuildHirearchy(ctx):
     global users
+    #add all users to the database
+    for user in ctx.guild.members:
+        if not str(user.id) in users:
+            newUser=userTemplate.copy()
+            newUser["id"]=user.id
+            users[str(user.id)]=newUser
+            print(f"Added {user.name} to database", flush=True)
+    saveUserdb()
     now=datetime.datetime.now()
     print(f"[{now}] Rebuilding hirearchy because of {ctx.author.name}", flush=True)
     votes=getUserVotes()
     print("votes: ", votes, flush=True)
     print("users: ", users, flush=True)
     for user in users:
+        currentUser=discord.utils.get(ctx.guild.members, id=users[user]["id"])
+        userRoles=[role.name for role in currentUser.roles]
+        print(f"Checking {currentUser.name} with roles {userRoles}, flush=True")
         if votes[users[user]["id"]]>=2:
             print(f"{user} is a pack leader", flush=True)
             users[user]["isOwner"]=True
@@ -80,9 +92,7 @@ async def rebuildHirearchy(ctx):
             users[user]["isOwner"]=False
         #if a user has more than 2 votes, they become a pack leader, and everybody who voted for them becomes owned by them.
         #no more than 5 users can join a pack
-        currentUser=discord.utils.get(ctx.guild.members, id=users[user]["id"])
-        userRoles=[role.name for role in currentUser.roles]
-        print(f"Checking {currentUser.name} with roles {userRoles}, flush=True")
+
         if "Bot Override" in userRoles:
             print("User is a bot override, skipping", flush=True)
             continue
@@ -107,6 +117,15 @@ async def rebuildHirearchy(ctx):
                     if users[userb]["owner"]==users[user]["id"]:
                         users[userb]["isOwned"]=False
                         users[userb]["owner"]=0
+        if users[user]["isOwned"] or users[user]["isOwner"]:
+            if not "Pack Avali" in userRoles:
+                await currentUser.add_roles(discord.utils.get(ctx.guild.roles, name="Pack Avali"))
+                print(f"Added Pack Avali to {currentUser.name}", flush=True)
+        else:
+            if "Pack Avali" in userRoles:
+                await currentUser.remove_roles(discord.utils.get(ctx.guild.roles, name="Pack Avali"))
+                print(f"Removed Pack Avali from {currentUser.name}", flush=True)
+                
     saveUserdb()
 def getUserName(ctx, id):
     for user in ctx.guild.members:
