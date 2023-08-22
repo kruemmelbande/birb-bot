@@ -77,23 +77,27 @@ async def rebuildHirearchy(ctx):
     for user in users:
         currentUser=discord.utils.get(ctx.guild.members, id=users[user]["id"])
         userRoles=[role.name for role in currentUser.roles]
-        print(f"Checking {currentUser.name} with roles {userRoles}, flush=True")
+        print(f"VERBOSE Checking {currentUser.name} with roles {userRoles}, flush=True")
         if votes[users[user]["id"]]>=2:
             print(f"{user} is a pack leader", flush=True)
             users[user]["isOwner"]=True
             users[user]["isOwned"]=False
             users[user]["votesFor"]=0
             users[user]["isVoting"]=False
+        else:
+            users[user]["isOwner"]=False
         if votes[users[user]["votesFor"]]>=2:
             users[user]["isOwned"]=True
             users[user]["isOwner"]=False
+        else:
+            users[user]["isOwned"]=False
         #if a user has more than 2 votes, they become a pack leader, and everybody who voted for them becomes owned by them.
         #no more than 5 users can join a pack
 
         if "Bot Override" in userRoles:
-            print("User is a bot override, skipping", flush=True)
+            print("VERBOSE User is a bot override, skipping", flush=True)
             continue
-        print(f"User has {votes[currentUser.id]} votes", flush=True)
+        print(f"VERBOSE User has {votes[currentUser.id]} votes", flush=True)
         if votes[currentUser.id]>=2:
             #user is a pack leader
             #check if they already have the role
