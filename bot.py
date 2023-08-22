@@ -58,7 +58,6 @@ def getUserVotes():
             votes[users[user]["votesFor"]]+=1
         else:
             votes[users[user]["votesFor"]]=1
-    print("votes: ", votes, flush=True)
     votes[0]=0
     return votes
 
@@ -75,8 +74,6 @@ async def rebuildHirearchy(ctx):
     now=datetime.datetime.now()
     print(f"[{now}] Rebuilding hirearchy because of {ctx.author.name}", flush=True)
     votes=getUserVotes()
-    print("votes: ", votes, flush=True)
-    print("users: ", users, flush=True)
     for user in users:
         currentUser=discord.utils.get(ctx.guild.members, id=users[user]["id"])
         userRoles=[role.name for role in currentUser.roles]
