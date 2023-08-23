@@ -1,5 +1,4 @@
 import discord, json
-from discord import default_permissions
 from sys import exit
 import datetime
 import asyncio
@@ -15,7 +14,32 @@ userTemplate={
     "isOwned":False,
     "isOwner":False
 }
- 
+def loadUserdb():
+    global users, userdb, packs
+    try:
+        with open("userdb.json","r") as f:
+            userdb=json.load(f)
+            users=userdb["users"]
+            packs=userdb["packs"]
+    except Exception as e:
+        print("Unable to load userdb", flush=True)
+        print(e, flush=True)
+        exit()
+    return users
+
+def saveUserdb():
+    global users
+    try:
+        with open("userdb.json","w") as f:
+            #print(json.dumps(users, indent=4))
+            userdb={"users":users,"packs":packs}
+            json.dump(userdb,f,indent=4)
+            print(f"[{datetime.datetime.now()}] Saved userdb", flush=True)
+    except Exception as e:
+        print("Unable to save userdb", flush=True)
+        print(e, flush=True)
+        exit()
+
 try:
     #load config
     with open("config.json","r") as f:
@@ -70,14 +94,31 @@ async def rebuildHirearchy(ctx):
             newUser["id"]=user.id
             users[str(user.id)]=newUser
             print(f"Added {user.name} to database", flush=True)
+    for user in users.copy():
+        if not users[user]["id"] in [user.id for user in ctx.guild.members]:
+            print(f"Removed {user} from database", flush=True)
+            users.pop(user)
+            if user in users:
+                print("CRITICAL: Unable to remove user from database", flush=True)
+                exit()
+    #remove all references to users that are not in the database
+    for user in users:
+        if (not str(users[user]["votesFor"]) in [str(user) for user in users]) and users[user]["isVoting"]==True:
+            print(f"Removed reference to {users[user]['votesFor']} from {user}", flush=True)
+            users[user]["votesFor"]=0
+            users[user]["isVoting"]=False
     saveUserdb()
     now=datetime.datetime.now()
     print(f"[{now}] Rebuilding hirearchy because of {ctx.author.name}", flush=True)
     votes=getUserVotes()
     for user in users:
         currentUser=discord.utils.get(ctx.guild.members, id=users[user]["id"])
+        if currentUser==None:
+            print(f"CRITICAL: User {user} not found", flush=True)
+        print(f"VERBOSE {user}: {currentUser}", flush=True)
+        print(f"VERBOSE {currentUser.name}", flush=True)
         userRoles=[role.name for role in currentUser.roles]
-        print(f"VERBOSE Checking {currentUser.name} with roles {userRoles}, flush=True")
+        print(f"VERBOSE Checking {currentUser.name} with roles {userRoles} ", flush=True)
         if votes[users[user]["id"]]>=2:
             print(f"{user} is a pack leader", flush=True)
             users[user]["isOwner"]=True
@@ -115,9 +156,9 @@ async def rebuildHirearchy(ctx):
                 await ctx.author.remove_roles(discord.utils.get(ctx.guild.roles, name="Pack Leader"))
                 print(f"Removed role from {currentUser.name}", flush=True)
                 for userb in users:
-                    if users[userb]["owner"]==users[user]["id"]:
+                    #check if the user is owned by the user
+                    if users[userb]["votesFor"]==users[user]["id"]:
                         users[userb]["isOwned"]=False
-                        users[userb]["owner"]=0
         if users[user]["isOwned"] or users[user]["isOwner"]:
             if not "Pack Avali" in userRoles:
                 await currentUser.add_roles(discord.utils.get(ctx.guild.roles, name="Pack Avali"))
@@ -128,6 +169,7 @@ async def rebuildHirearchy(ctx):
                 print(f"Removed Pack Avali from {currentUser.name}", flush=True)
                 
     saveUserdb()
+
 def getUserName(ctx, id):
     for user in ctx.guild.members:
         if user.id==id:
@@ -138,27 +180,6 @@ def getUserName(ctx, id):
     return "User not found"
         
 users={}
-def loadUserdb():
-    global users
-    try:
-        with open("userdb.json","r") as f:
-            users=json.load(f)
-    except Exception as e:
-        print("Unable to load userdb", flush=True)
-        print(e, flush=True)
-        exit()
-    return users
-
-def saveUserdb():
-    global users
-    try:
-        with open("userdb.json","w") as f:
-            json.dump(users,f,indent=4)
-            print(f"[{datetime.datetime.now()}] Saved userdb", flush=True)
-    except Exception as e:
-        print("Unable to save userdb", flush=True)
-        print(e, flush=True)
-        exit()
 
 @bot.event
 async def on_ready():
@@ -242,7 +263,7 @@ async def bonkme(ctx):
 async def vote(ctx, user: discord.Member):
     global users
     print(f"[{datetime.datetime.now()}] {ctx.author.name} used vote", flush=True)
-    votes=getUserVotes()
+    
     #check if user is in database
     returnstring=""
     for usera in ctx.guild.members:
@@ -263,6 +284,7 @@ async def vote(ctx, user: discord.Member):
         newUser["id"]=targetUser.id
         users[str(targetUser.id)]=newUser
         saveUserdb()
+        print("User added to database", flush=True)
     if users[str(targetUser.id)]["isOwned"]==True:
         returnstring="You cannot vote for a user who is owned by another user"
         await ctx.respond(returnstring, ephemeral=True)
