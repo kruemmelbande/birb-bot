@@ -85,6 +85,8 @@ def getUserVotes():
     votes[0]=0
     return votes
 
+
+
 async def rebuildHirearchy(ctx):
     global users
     #add all users to the database
@@ -153,7 +155,7 @@ async def rebuildHirearchy(ctx):
             #user is not a pack leader
             #check if they have the role
             if "Pack Leader" in userRoles:
-                await ctx.author.remove_roles(discord.utils.get(ctx.guild.roles, name="Pack Leader"))
+                await currentUser.remove_roles(discord.utils.get(ctx.guild.roles, name="Pack Leader"))
                 print(f"Removed role from {currentUser.name}", flush=True)
                 for userb in users:
                     #check if the user is owned by the user
@@ -185,6 +187,17 @@ users={}
 async def on_ready():
     print(f'We have logged in as {bot.user}', flush=True)
     loadUserdb()
+
+@bot.slash_command(name="estop", description="Stops the bot")
+async def estop(ctx):
+    print(f"[{datetime.datetime.now()}] {ctx.author.name} used estop", flush=True)
+    if not isElivated(ctx):
+        print(f"{ctx.author.name} tried to stop the bot without permission", flush=True)
+        await ctx.respond("You do not have permission to use this command", ephemeral=True)
+        return
+    await ctx.respond("Stopping bot", ephemeral=True)
+    await bot.close()
+    exit()
 
 @bot.slash_command(name="kickfrompack", description="Kick a user from your pack")
 async def kickfrompack(ctx, user: discord.Member):
