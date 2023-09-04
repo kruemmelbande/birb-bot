@@ -270,6 +270,29 @@ async def bonkme(ctx):
         print(f"Added role to {ctx.author.name}", flush=True)
         await ctx.respond("*bonk*, you now have access to the bonk worthy channels", ephemeral=True) #ephemeral=True means that only the user who used the command can see the response
 
+@bot.slash_command(name="help", description="Explains how to use the bot")
+async def help(ctx):
+    await ctx.respond("""Available commands:```
+/hirearchy - Shows the current hirearchy
+/vote <user> - Vote for a user
+/bonkme - Gives you the NSFW role
+/kickfrompack <user> - Kick a user from your pack
+```
+Commands are usable in any channels. Your message will only be visible to you.
+
+You can vote for a user, and once 2-5 people vote for the same user, a pack will be created for them.
+All avalis in a pack will get the "Pack Avali" role, and the pack leader will get the "Pack Leader" role.
+Those roles will give you additional rights in the server.
+
+You can only vote for an avali, if you and the avali are not in a pack yet.
+If you would like to remove your vote, vote for yourself.
+
+If you are a pack leader and wish to kick a user from your pack, use /kickfrompack <user>
+
+You can show who votes for who, and which packs exist with /hirearchy (all votes are public)
+
+For issues or questions, contact Aoki (@kruemmelbande), or open an issue on the <[github page](https://github.com/kruemmelbande/birb-bot/issues)>
+""", ephemeral=True)
 @bot.slash_command(name="vote", description="Vote for a user")
 async def vote(ctx, user: discord.Member):
     global users
@@ -298,9 +321,9 @@ async def vote(ctx, user: discord.Member):
         print("User added to database", flush=True)
     votes=getUserVotes()
     if users[str(targetUser.id)]["isOwned"]==True:
-        returnstring="You cannot vote for a user who is owned by another user"
+        returnstring="You cannot vote for a user who is already in a pack."
         if votes[users[str(targetUser.id)]["votesFor"]]<5:
-            returnstring+=f" if you want to join their pack however, you can vote for {getUserName(ctx, users[str(targetUser.id)]['votesFor'])}"
+            returnstring+=f" The pack this user belongs to however, has a slot available. To join use /vote {getUserName(ctx, users[str(targetUser.id)]['votesFor'])}"
         await ctx.respond(returnstring, ephemeral=True)
         return
     voter=ctx.author
