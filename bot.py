@@ -279,6 +279,7 @@ async def help(ctx):
 /kickfrompack <user> - Kick a user from your pack
 ```
 Commands are usable in any channels. Your message will only be visible to you.
+Only the listed commands are available, and all other commands are for internal use only (you couldnt use them even if you wanted to).
 
 You can vote for a user, and once 2-5 people vote for the same user, a pack will be created for them.
 All avalis in a pack will get the "Pack Avali" role, and the pack leader will get the "Pack Leader" role.
