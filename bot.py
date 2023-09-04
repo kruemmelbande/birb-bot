@@ -354,9 +354,10 @@ async def vote(ctx, user: discord.Member):
         users[str(voter.id)]["isVoting"]=False
         users[str(voter.id)]["votesFor"]=0
         return
-    if users[str(voter.id)]["isVoting"]==True:
+    if users[str(voter.id)]["isVoting"]==True and users[str(voter.id)]["votesFor"]!=0:
         returnstring="Vote changed from "+str(discord.utils.get(ctx.guild.members, id=users[str(voter.id)]["votesFor"]).mention)+" to "+str(targetUser.mention)
         users[str(voter.id)]["votesFor"]=targetUser.id
+        users[str(voter.id)]["isVoting"]=True
     else:
         saveUserdb()
         returnstring="Vote registered for "+str(targetUser.mention)
