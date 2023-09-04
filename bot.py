@@ -5,8 +5,6 @@ import asyncio
 intents=discord.Intents.all()
 bot = discord.Bot(intents=intents)
 
-
-intents.members = True
 userTemplate={
     "id":0,
     "votesFor":0,
@@ -298,8 +296,11 @@ async def vote(ctx, user: discord.Member):
         users[str(targetUser.id)]=newUser
         saveUserdb()
         print("User added to database", flush=True)
+    votes=getUserVotes()
     if users[str(targetUser.id)]["isOwned"]==True:
         returnstring="You cannot vote for a user who is owned by another user"
+        if votes[users[str(targetUser.id)]["votesFor"]]<5:
+            returnstring+=f" if you want to join their pack however, you can vote for {getUserName(ctx, users[str(targetUser.id)]['votesFor'])}"
         await ctx.respond(returnstring, ephemeral=True)
         return
     voter=ctx.author
@@ -309,7 +310,7 @@ async def vote(ctx, user: discord.Member):
         users[str(voter.id)]["id"]=voter.id
         print("Voter not in database", flush=True)
         saveUserdb()
-    votes=getUserVotes()
+
     if users[str(votee.id)]["isOwned"]==True:
         returnstring="You cannot vote for a user who is owned by another user"
         await ctx.respond(returnstring, ephemeral=True)
