@@ -2,6 +2,7 @@ import discord, json
 from sys import exit
 import datetime
 import asyncio
+import time
 intents=discord.Intents.all()
 bot = discord.Bot(intents=intents)
 
@@ -393,5 +394,5 @@ async def vote(ctx, user: discord.Member):
 #     print(inputstring)
 #     await ctx.respond(f"Test {ctx.author.mention}, you said: {inputstring}")
 #     #get back the message, that the user sent
-    
+time.sleep(5)
 bot.run(token)
