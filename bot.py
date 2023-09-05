@@ -171,13 +171,18 @@ async def rebuildHirearchy(ctx):
     saveUserdb()
 
 def getUserName(ctx, id):
+    id=int(id)
     for user in ctx.guild.members:
         if user.id==id:
             #get the user nickname and username
             if user.display_name==user.name:
-                return user.name
-            return f"{user.display_name} ({user.name})"
-    return "User not found"
+                name=user.name
+            else:
+                name=f"{user.display_name} ({user.name})"
+            name=name.replace("\\","\\\\").replace("*","\\*").replace("_","\\_").replace("~","\\~").replace("`","\\`")
+            return name
+    rebuildHirearchy(ctx)
+    return "User not found, trying to auto fix..."
         
 users={}
 
@@ -236,7 +241,7 @@ async def hirearchy(ctx):
     singles=[user for user in votes if votes[user]==1]
     returnstring="####Pack Leaders###\n"
     for leader in leaders:
-        returnstring+=discord.utils.get(ctx.guild.members, id=leader).name+"\n"
+        returnstring+=getUserName(ctx,leader)+"\n"
         for user in users:
             if users[user]["votesFor"]==leader:
                 returnstring+= "  -" + getUserName(ctx, users[user]["id"]) + "\n"
