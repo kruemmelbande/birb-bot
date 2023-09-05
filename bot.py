@@ -83,8 +83,6 @@ def getUserVotes():
     votes[0]=0
     return votes
 
-
-
 async def rebuildHirearchy(ctx):
     global users
     #add all users to the database
@@ -113,6 +111,14 @@ async def rebuildHirearchy(ctx):
     votes=getUserVotes()
     for user in users:
         currentUser=discord.utils.get(ctx.guild.members, id=users[user]["id"])
+        if users[user]["isVoting"]:
+            currentTarget=discord.utils.get(ctx.guild.members, id=int(users[user]["votesFor"]))
+            if currentTarget==None:
+                print(f"CRITICAL: Target {users[user]['votesFor']} ({user}) not found", flush=True)
+            if currentTarget.bot:
+                users[user]["votesFor"]=0
+                users[user]["isVoting"]=False
+                print(f"Removed vote for {currentUser.name} because they are a bot", flush=True)
         if currentUser==None:
             print(f"CRITICAL: User {user} not found", flush=True)
         print(f"VERBOSE {user}: {currentUser}", flush=True)
@@ -299,6 +305,7 @@ You can show who votes for who, and which packs exist with /hirearchy (all votes
 
 For issues or questions, contact Aoki (@kruemmelbande), or open an issue on the <[github page](https://github.com/kruemmelbande/birb-bot/issues)>
 """, ephemeral=True)
+
 @bot.slash_command(name="vote", description="Vote for a user")
 async def vote(ctx, user: discord.Member):
     global users
@@ -315,6 +322,9 @@ async def vote(ctx, user: discord.Member):
         print(user.id, flush=True)
         print([user.id for user in ctx.guild.members], flush=True) 
         await ctx.respond("User not found", ephemeral=True)
+        return
+    if targetUser.bot:
+        await ctx.respond("You cannot vote for a bot", ephemeral=True)
         return
     if not str(targetUser.id) in users:
         print("User not in database", flush=True)
