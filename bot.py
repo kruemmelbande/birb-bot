@@ -199,7 +199,9 @@ users={}
 @bot.event
 async def on_ready():
     print(f'We have logged in as {bot.user}', flush=True)
+    global guild
     loadUserdb()
+    guild = discord.utils.get(bot.guilds, name=config["guild"])
 
 @bot.slash_command(name="estop", description="Stops the bot")
 async def estop(ctx):
