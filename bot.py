@@ -7,7 +7,7 @@ import time
 intents=discord.Intents.all()
 bot = discord.Bot(intents=intents)
 
-version="0.1.1"
+version="0.1.2"
 
 userTemplate={
     "id":0,
@@ -90,14 +90,14 @@ def getUserVotes():
 async def rebuildHirearchy(ctx):
     global users
     #add all users to the database
-    for user in ctx.guild.members:
+    for user in guild.members:
         if not str(user.id) in users:
             newUser=userTemplate.copy()
             newUser["id"]=user.id
             users[str(user.id)]=newUser
             print(f"Added {user.name} to database", flush=True)
     for user in users.copy():
-        if not users[user]["id"] in [user.id for user in ctx.guild.members]:
+        if not users[user]["id"] in [user.id for user in guild.members]:
             print(f"Removed {user} from database", flush=True)
             users.pop(user)
             if user in users:
@@ -114,9 +114,9 @@ async def rebuildHirearchy(ctx):
     print(f"[{now}] Rebuilding hirearchy because of {ctx.author.name}", flush=True)
     votes=getUserVotes()
     for user in users:
-        currentUser=discord.utils.get(ctx.guild.members, id=users[user]["id"])
+        currentUser=discord.utils.get(guild.members, id=users[user]["id"])
         if users[user]["isVoting"]:
-            currentTarget=discord.utils.get(ctx.guild.members, id=int(users[user]["votesFor"]))
+            currentTarget=discord.utils.get(guild.members, id=int(users[user]["votesFor"]))
             if currentTarget==None:
                 print(f"CRITICAL: Target {users[user]['votesFor']} ({user}) not found", flush=True)
             if currentTarget.bot:
@@ -153,7 +153,7 @@ async def rebuildHirearchy(ctx):
             #user is a pack leader
             #check if they already have the role
             if not "Pack Leader" in userRoles:
-                await currentUser.add_roles(discord.utils.get(ctx.guild.roles, name="Pack Leader"))
+                await currentUser.add_roles(discord.utils.get(guild.roles, name="Pack Leader"))
                 print(f"Added role to {currentUser.name}", flush=True)
             for userb in users:
                 if users[userb]["votesFor"]==users[user]["id"]:
@@ -163,7 +163,7 @@ async def rebuildHirearchy(ctx):
             #user is not a pack leader
             #check if they have the role
             if "Pack Leader" in userRoles:
-                await currentUser.remove_roles(discord.utils.get(ctx.guild.roles, name="Pack Leader"))
+                await currentUser.remove_roles(discord.utils.get(guild.roles, name="Pack Leader"))
                 print(f"Removed role from {currentUser.name}", flush=True)
                 for userb in users:
                     #check if the user is owned by the user
@@ -171,18 +171,18 @@ async def rebuildHirearchy(ctx):
                         users[userb]["isOwned"]=False
         if users[user]["isOwned"] or users[user]["isOwner"]:
             if not "Pack Avali" in userRoles:
-                await currentUser.add_roles(discord.utils.get(ctx.guild.roles, name="Pack Avali"))
+                await currentUser.add_roles(discord.utils.get(guild.roles, name="Pack Avali"))
                 print(f"Added Pack Avali to {currentUser.name}", flush=True)
         else:
             if "Pack Avali" in userRoles:
-                await currentUser.remove_roles(discord.utils.get(ctx.guild.roles, name="Pack Avali"))
+                await currentUser.remove_roles(discord.utils.get(guild.roles, name="Pack Avali"))
                 print(f"Removed Pack Avali from {currentUser.name}", flush=True)
                 
     saveUserdb()
 
 def getUserName(ctx, id):
     id=int(id)
-    for user in ctx.guild.members:
+    for user in guild.members:
         if user.id==id:
             #get the user nickname and username
             if user.display_name==user.name:
@@ -201,7 +201,10 @@ async def on_ready():
     print(f'We have logged in as {bot.user}', flush=True)
     global guild
     loadUserdb()
-    guild = discord.utils.get(bot.guilds, name=config["guild"])
+    guildID=config["guildID"]
+    guildID=int(guildID)
+    guild=discord.utils.get(bot.guilds, id=guildID)
+    print(f"Guild: {guild.name}", flush=True)
 
 @bot.slash_command(name="estop", description="Stops the bot")
 async def estop(ctx):
@@ -269,7 +272,7 @@ async def hirearchy(ctx):
 @bot.slash_command(name="bonkme", description="Gives you the NSFW role")
 async def bonkme(ctx):
     print(f"[{datetime.datetime.now()}] {ctx.author.name} used bonkme", flush=True)
-    role=discord.utils.get(ctx.guild.roles, name="Bonk")
+    role=discord.utils.get(guild.roles, name="Bonk")
 
     if hasRole(ctx, "Anti Horny Tabs"):
         await ctx.respond("You do not have permission to use this command", ephemeral=True)
@@ -339,14 +342,14 @@ async def vote(ctx, user: discord.Member):
     
     #check if user is in database
     returnstring=""
-    for usera in ctx.guild.members:
+    for usera in guild.members:
         if user.id == usera.id:
             targetUser=usera
             print("User found", flush=True)
             break
     else:
         #print(user.id, flush=True)
-        #print([user.id for user in ctx.guild.members], flush=True) 
+        #print([user.id for user in guild.members], flush=True) 
         await ctx.respond(f"User {user.id} not found", ephemeral=True)
         return
     if targetUser.bot:
@@ -396,7 +399,7 @@ async def vote(ctx, user: discord.Member):
         users[str(voter.id)]["votesFor"]=0
         return
     if users[str(voter.id)]["isVoting"]==True and users[str(voter.id)]["votesFor"]!=0:
-        returnstring="Vote changed from "+str(discord.utils.get(ctx.guild.members, id=users[str(voter.id)]["votesFor"]).mention)+" to "+str(targetUser.mention)
+        returnstring="Vote changed from "+str(discord.utils.get(guild.members, id=users[str(voter.id)]["votesFor"]).mention)+" to "+str(targetUser.mention)
         users[str(voter.id)]["votesFor"]=targetUser.id
         users[str(voter.id)]["isVoting"]=True
     else:
