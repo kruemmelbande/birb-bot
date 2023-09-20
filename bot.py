@@ -2,6 +2,7 @@ import discord, json
 from sys import exit
 import datetime
 import asyncio
+import os
 import time
 intents=discord.Intents.all()
 bot = discord.Bot(intents=intents)
@@ -282,6 +283,23 @@ async def bonkme(ctx):
         print(f"Added role to {ctx.author.name}", flush=True)
         await ctx.respond("*bonk*, you now have access to the bonk worthy channels", ephemeral=True) #ephemeral=True means that only the user who used the command can see the response
 
+@bot.slash_command(name="update", description="For internal use only")
+async def update(ctx):
+    if not isElivated(ctx):
+        print(f"{ctx.author.name} tried to update the bot without permission", flush=True)
+        await ctx.respond("You do not have permission to use this command", ephemeral=True)
+        return
+    print(f"[{datetime.datetime.now()}] {ctx.author.name} used update", flush=True)
+    # await ctx.respond("This command is not tested yet, so at the moment, it is disabled", ephemeral=True)
+    # return
+    os.system("rm -rf ./birb-bot")
+    os.system("cp ./bot.py ./bot.py.bak")
+    os.system("git clone https://github.com/kruemmelbande/birb-bot") #move this to the config
+    os.system("cp ./birb-bot/bot.py bot.py")
+    await ctx.respond("The bot has been updated, and will restart...", ephemeral=True)
+    os.system("systemctl restart birbbot.service birbbot.timer")
+    exit()
+
 @bot.slash_command(name="help", description="Explains how to use the bot")
 async def help(ctx):
     await ctx.respond("""Available commands:```
@@ -320,17 +338,17 @@ async def vote(ctx, user: discord.Member):
             print("User found", flush=True)
             break
     else:
-        print(user.id, flush=True)
-        print([user.id for user in ctx.guild.members], flush=True) 
-        await ctx.respond("User not found", ephemeral=True)
+        #print(user.id, flush=True)
+        #print([user.id for user in ctx.guild.members], flush=True) 
+        await ctx.respond(f"User {user.id} not found", ephemeral=True)
         return
     if targetUser.bot:
         await ctx.respond("You cannot vote for a bot", ephemeral=True)
         return
     if not str(targetUser.id) in users:
-        print("User not in database", flush=True)
-        print([i for i in users], flush=True)
-        print(targetUser.id, flush=True)
+        print(f"User {targetUser.id} not in database", flush=True)
+        #print([i for i in users], flush=True)
+        #print(targetUser.id, flush=True)
         newUser=userTemplate.copy()
         newUser["id"]=targetUser.id
         users[str(targetUser.id)]=newUser
@@ -380,8 +398,8 @@ async def vote(ctx, user: discord.Member):
         users[str(voter.id)]["isVoting"]=True
         saveUserdb()
         users[str(voter.id)]["votesFor"]=targetUser.id
-        print(voter, flush=True)
-        print(voter.id, flush=True)
+        #print(voter, flush=True)
+        #print(voter.id, flush=True)
     saveUserdb()
     print("Rebuilding hirearchy", flush=True)
     await rebuildHirearchy(ctx)
