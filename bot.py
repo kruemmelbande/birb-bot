@@ -7,6 +7,8 @@ import time
 intents=discord.Intents.all()
 bot = discord.Bot(intents=intents)
 
+version="0.1.0"
+
 userTemplate={
     "id":0,
     "votesFor":0,
@@ -323,7 +325,10 @@ If you are a pack leader and wish to kick a user from your pack, use /kickfrompa
 You can show who votes for who, and which packs exist with /hirearchy (all votes are public)
 
 For issues or questions, contact Aoki (@kruemmelbande), or open an issue on the <[github page](https://github.com/kruemmelbande/birb-bot/issues)>
-""", ephemeral=True)
+```
+Birb Bot Version: """+version+"""
+Uptime: """ + str(datetime.timedelta(seconds=time.time()-starttime))+"""
+```""", ephemeral=True)
 
 @bot.slash_command(name="vote", description="Vote for a user")
 async def vote(ctx, user: discord.Member):
@@ -413,4 +418,6 @@ async def vote(ctx, user: discord.Member):
 #     await ctx.respond(f"Test {ctx.author.mention}, you said: {inputstring}")
 #     #get back the message, that the user sent
 time.sleep(5)
+
+starttime=time.time()
 bot.run(token)
