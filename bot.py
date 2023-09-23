@@ -7,7 +7,7 @@ import time
 intents=discord.Intents.all()
 bot = discord.Bot(intents=intents)
 
-version="0.1.2"
+version="0.1.3"
 
 userTemplate={
     "id":0,
