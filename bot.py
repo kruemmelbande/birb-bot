@@ -194,9 +194,16 @@ def getUserName(ctx, id):
                 name=f"{user.display_name} ({user.name})"
             name=name.replace("\\","\\\\").replace("*","\\*").replace("_","\\_").replace("~","\\~").replace("`","\\`")
             return name
-    wrapper_buildHirearchy(ctx)
-    saveUserdb()
     print(f"ERROR: Username with id {id} was unable to be resolved", flush=True)
+    try:
+        wrapper_buildHirearchy(ctx)
+        saveUserdb()
+    except Exception as e:
+        print(f"ERROR: Unable to rebuild hirearchy: {e}", flush=True)
+        if isElivated(ctx):
+            return e
+        else:
+            return "An error occured. Please contact Aoki (@kruemmelbande) or try again."
     return "User not found (If possible, it should be fixed the next time this command is used.)"
         
 users={}
