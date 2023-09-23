@@ -196,16 +196,9 @@ def getUserName(ctx, id):
             return name
     print(f"ERROR: Username with id {id} was unable to be resolved", flush=True)
     #return "This message is just here for testing. (stop looking pls)" #okay, so, cuz you were so nice to look, ill actually accept it. Hi github <3
-    try:
-        wrapper_buildHirearchy(ctx)
-        saveUserdb()
-    except Exception as e:
-        print(f"ERROR: Unable to rebuild hirearchy: {e}", flush=True)
-        if isElivated(ctx):
-            return e
-        else:
-            return "An error occured. Please contact Aoki (@kruemmelbande) or try again."
-    return "User not found (If possible, it should be fixed the next time this command is used.)"
+    wrapper_buildHirearchy(ctx)
+    saveUserdb()
+    return "`An error occured. Please run the command again. If the issue persists, contact Aoki (@kruemmelbande)`"
         
 users={}
 
