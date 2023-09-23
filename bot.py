@@ -180,6 +180,9 @@ async def rebuildHirearchy(ctx):
                 
     saveUserdb()
 
+def wrapper_buildHirearchy(ctx):
+    asyncio.run(buildHirearchy(ctx))
+
 def getUserName(ctx, id):
     id=int(id)
     for user in guild.members:
@@ -191,8 +194,10 @@ def getUserName(ctx, id):
                 name=f"{user.display_name} ({user.name})"
             name=name.replace("\\","\\\\").replace("*","\\*").replace("_","\\_").replace("~","\\~").replace("`","\\`")
             return name
-    rebuildHirearchy(ctx)
-    return "User not found, trying to auto fix..."
+    wrapper_buildHirearchy(ctx)
+    saveUserdb()
+    print(f"ERROR: Username with id {id} was unable to be resolved", flush=True)
+    return "User not found (If possible, it should be fixed the next time this command is used.)"
         
 users={}
 
