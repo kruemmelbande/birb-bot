@@ -181,7 +181,7 @@ async def rebuildHirearchy(ctx):
     saveUserdb()
 
 def wrapper_buildHirearchy(ctx):
-    asyncio.run(rebuildHirearchy(ctx))
+    asyncio.run_coroutine_threadsafe(rebuildHirearchy(ctx), bot.loop)
 
 def getUserName(ctx, id):
     id=int(id)
@@ -195,7 +195,7 @@ def getUserName(ctx, id):
             name=name.replace("\\","\\\\").replace("*","\\*").replace("_","\\_").replace("~","\\~").replace("`","\\`")
             return name
     print(f"ERROR: Username with id {id} was unable to be resolved", flush=True)
-    return "This message is just here for testing. (stop looking pls)"
+    #return "This message is just here for testing. (stop looking pls)" #okay, so, cuz you were so nice to look, ill actually accept it. Hi github <3
     try:
         wrapper_buildHirearchy(ctx)
         saveUserdb()
