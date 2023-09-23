@@ -195,6 +195,7 @@ def getUserName(ctx, id):
             name=name.replace("\\","\\\\").replace("*","\\*").replace("_","\\_").replace("~","\\~").replace("`","\\`")
             return name
     print(f"ERROR: Username with id {id} was unable to be resolved", flush=True)
+    return "This message is just here for testing. (stop looking pls)"
     try:
         wrapper_buildHirearchy(ctx)
         saveUserdb()
