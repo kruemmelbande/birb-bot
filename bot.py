@@ -181,7 +181,7 @@ async def rebuildHirearchy(ctx):
     saveUserdb()
 
 def wrapper_buildHirearchy(ctx):
-    asyncio.run(buildHirearchy(ctx))
+    asyncio.run(rebuildHirearchy(ctx))
 
 def getUserName(ctx, id):
     id=int(id)
