@@ -305,11 +305,14 @@ async def update(ctx):
     print(f"[{datetime.datetime.now()}] {ctx.author.name} used update", flush=True)
     # await ctx.respond("This command is not tested yet, so at the moment, it is disabled", ephemeral=True)
     # return
+    saveUserdb()
+    
     os.system("rm -rf ./birb-bot")
     os.system("cp ./bot.py ./bot.py.bak")
     os.system("git clone https://github.com/kruemmelbande/birb-bot") #move this to the config
     os.system("cp ./birb-bot/bot.py bot.py")
     await ctx.respond("The bot has been updated, and will restart...", ephemeral=True)
+    asyncio.sleep(3)
     os.system("systemctl restart birbbot.service birbbot.timer")
     exit()
 
