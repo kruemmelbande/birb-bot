@@ -8,9 +8,9 @@ intents=discord.Intents.all()
 bot = discord.Bot(intents=intents)
 
 version="0.1.3"
+jsonversion=2
 
 userTemplate={
-    "id":0,
     "votesFor":0,
     "isVoting":False,
     "isOwned":False,
@@ -21,6 +21,12 @@ def loadUserdb():
     try:
         with open("userdb.json","r") as f:
             userdb=json.load(f)
+            try:
+                jsonver=userdb["version"]
+            except:
+                jsonver="No version found"
+            if jsonver!=jsonversion:
+                print(f"CRITICAL: Userdb is non-valid version! Expected {jsonversion}, got {jsonver}", flush=True)
             users=userdb["users"]
             packs=userdb["packs"]
     except Exception as e:
@@ -66,6 +72,7 @@ def isElivated(ctx):
     return False
 
 def hasRole(ctx, role):
+  
     for rolea in ctx.author.roles:
         if rolea.name==role:
             return True
@@ -76,8 +83,8 @@ def getUserVotes():
     votes={}
     for user in users:
         
-        if not users[user]["id"] in votes:
-            votes[users[user]["id"]]=0
+        if not int(user) in votes:
+            votes[int(user)]=0
         if users[user]["isVoting"]==False:
             continue
         if users[user]["votesFor"] in votes:
@@ -93,11 +100,10 @@ async def rebuildHirearchy(ctx):
     for user in guild.members:
         if not str(user.id) in users:
             newUser=userTemplate.copy()
-            newUser["id"]=user.id
             users[str(user.id)]=newUser
             print(f"Added {user.name} to database", flush=True)
     for user in users.copy():
-        if not users[user]["id"] in [user.id for user in guild.members]:
+        if not int(user) in [user.id for user in guild.members]:
             print(f"Removed {user} from database", flush=True)
             users.pop(user)
             if user in users:
@@ -114,7 +120,7 @@ async def rebuildHirearchy(ctx):
     print(f"[{now}] Rebuilding hirearchy because of {ctx.author.name}", flush=True)
     votes=getUserVotes()
     for user in users:
-        currentUser=discord.utils.get(guild.members, id=users[user]["id"])
+        currentUser=discord.utils.get(guild.members, id=int(user))
         if users[user]["isVoting"]:
             currentTarget=discord.utils.get(guild.members, id=int(users[user]["votesFor"]))
             if currentTarget==None:
@@ -129,7 +135,7 @@ async def rebuildHirearchy(ctx):
         print(f"VERBOSE {currentUser.name}", flush=True)
         userRoles=[role.name for role in currentUser.roles]
         print(f"VERBOSE Checking {currentUser.name} with roles {userRoles} ", flush=True)
-        if votes[users[user]["id"]]>=2:
+        if votes[int(user)]>=2:
             print(f"{user} is a pack leader", flush=True)
             users[user]["isOwner"]=True
             users[user]["isOwned"]=False
@@ -156,9 +162,9 @@ async def rebuildHirearchy(ctx):
                 await currentUser.add_roles(discord.utils.get(guild.roles, name="Pack Leader"))
                 print(f"Added role to {currentUser.name}", flush=True)
             for userb in users:
-                if users[userb]["votesFor"]==users[user]["id"]:
+                if users[userb]["votesFor"]==int(user):
                     users[userb]["isOwned"]=True
-                    users[userb]["owner"]=users[user]["id"]
+                    users[userb]["owner"]=int(user)
         else:
             #user is not a pack leader
             #check if they have the role
@@ -167,7 +173,7 @@ async def rebuildHirearchy(ctx):
                 print(f"Removed role from {currentUser.name}", flush=True)
                 for userb in users:
                     #check if the user is owned by the user
-                    if users[userb]["votesFor"]==users[user]["id"]:
+                    if users[userb]["votesFor"]==int(user):
                         users[userb]["isOwned"]=False
         if users[user]["isOwned"] or users[user]["isOwner"]:
             if not "Pack Avali" in userRoles:
@@ -265,13 +271,13 @@ async def hirearchy(ctx):
         returnstring+=getUserName(ctx,leader)+"\n"
         for user in users:
             if users[user]["votesFor"]==leader:
-                returnstring+= "  -" + getUserName(ctx, users[user]["id"]) + "\n"
+                returnstring+= "  -" + getUserName(ctx, user) + "\n"
         returnstring += "\n"
     returnstring+="####Single Votes###"
     for single in singles:
         for user in users:
             if users[user]["votesFor"]==single:
-                returnstring+= "\n" + getUserName(ctx, users[user]["id"]) + " => " + getUserName(ctx, users[user]["votesFor"])
+                returnstring+= "\n" + getUserName(ctx, user) + " => " + getUserName(ctx, users[user]["votesFor"])
 
     await ctx.respond(returnstring, ephemeral=True)
     
@@ -308,13 +314,26 @@ async def update(ctx):
     saveUserdb()
     
     os.system("rm -rf ./birb-bot")
-    os.system("cp ./bot.py ./bot.py.bak")
+    os.system(f"cp ./bot.py ./backups/bot.{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.py")
     os.system("git clone https://github.com/kruemmelbande/birb-bot") #move this to the config
+    return 
     os.system("cp ./birb-bot/bot.py bot.py")
     await ctx.respond("The bot has been updated, and will restart...", ephemeral=True)
     asyncio.sleep(3)
     os.system("systemctl restart birbbot.service birbbot.timer")
     exit()
+
+@bot.slash_command(name="restart", description="For internal use only")
+async def restart(ctx):
+    if not isElivated(ctx):
+        print(f"{ctx.author.name} tried to restart the bot without permission", flush=True)
+        await ctx.respond("You do not have permission to use this command", ephemeral=True)
+        return
+    print(f"[{datetime.datetime.now()}] {ctx.author.name} used restart", flush=True)
+    await ctx.respond("The bot will restart...", ephemeral=True)
+    saveUserdb()
+    asyncio.sleep(3)
+    os.system("systemctl restart birbbot.service birbbot.timer")
 
 @bot.slash_command(name="help", description="Explains how to use the bot")
 async def help(ctx):
@@ -369,7 +388,6 @@ async def vote(ctx, user: discord.Member):
         #print([i for i in users], flush=True)
         #print(targetUser.id, flush=True)
         newUser=userTemplate.copy()
-        newUser["id"]=targetUser.id
         users[str(targetUser.id)]=newUser
         saveUserdb()
         print("User added to database", flush=True)
@@ -384,7 +402,6 @@ async def vote(ctx, user: discord.Member):
     votee=targetUser
     if not str(voter.id) in users:
         users[str(voter.id)]=userTemplate.copy()
-        users[str(voter.id)]["id"]=voter.id
         print("Voter not in database", flush=True)
         saveUserdb()
 
@@ -425,7 +442,23 @@ async def vote(ctx, user: discord.Member):
     saveUserdb()
     await ctx.respond(returnstring, ephemeral=True)
     return
-    
+
+@bot.slash_command(name="tests", description="My internal testing command, here for everyone to see, cuz i aint using a debugger")
+async def tests(ctx, string: str):
+    if not isElivated(ctx):
+        await ctx.respond("You do not have permission to use this command", ephemeral=True)
+        return
+    print(f"[{datetime.datetime.now()}] {ctx.author.name} used tests", flush=True)
+    if string=="exceptions":
+        await ctx.respond("Testing exceptions", ephemeral=True)
+        raise Exception("Test exception")
+        print("Exception raised", flush=True)
+        await ctx.respond("An exception has been raised", ephemeral=True)
+        return
+    else:
+        await ctx.respond("Unknown test", ephemeral=True)
+        return
+ 
 # @bot.slash_command(name="test", description="Test command")
 # async def test(ctx, inputstring: str):
 #     print(inputstring)
