@@ -1,0 +1,15 @@
+[Unit]
+Description=A bot for all your birb needs
+After=network.target
+
+[Service]
+#you might want to consider using a different user than root for security reasons
+#however, I personally am fine with having a security risk on a server with all of my personal data on it
+#please dont hacc me ty ty <3
+User=root
+ExecStart=/path/to/bot/start.sh
+WorkingDirectory=/path/to/bot
+StandardError=inherit
+
+[Install]
+WantedBy=multi-user.target
