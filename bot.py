@@ -8,13 +8,14 @@ intents=discord.Intents.all()
 bot = discord.Bot(intents=intents)
 
 version="0.1.3"
-jsonversion=2
+jsonversion=3
 
 userTemplate={
     "votesFor":0,
     "isVoting":False,
     "isOwned":False,
-    "isOwner":False
+    "isOwner":False,
+    "isVotable":True
 }
 def loadUserdb():
     global users, userdb, packs
@@ -40,7 +41,7 @@ def saveUserdb():
     try:
         with open("userdb.json","w") as f:
             #print(json.dumps(users, indent=4))
-            userdb={"users":users,"packs":packs}
+            userdb={"users":users,"packs":packs,"version":jsonversion}
             json.dump(userdb,f,indent=4)
             print(f"[{datetime.datetime.now()}] Saved userdb", flush=True)
     except Exception as e:
