@@ -4,10 +4,11 @@ import datetime
 import asyncio
 import os
 import time
+import math
 intents=discord.Intents.all()
 bot = discord.Bot(intents=intents)
 
-version="0.1.3"
+version="0.1.4"
 jsonversion=3
 
 userTemplate={
@@ -35,6 +36,21 @@ def loadUserdb():
         print(e, flush=True)
         exit()
     return users
+
+async def longresponse(ctx, message):
+    if len(message)<2000:
+        print(f"VERBOSE: Message is of length {len(message)}", flush=True)
+        await ctx.respond(message, ephemeral=True)
+        return
+    print(len(message), flush=True)
+    segments= math.ceil(len(message)/2000)
+    print(f"VERBOSE: Sending {segments} messages", flush=True)
+    for i in range(segments):
+        if i*2000>len(message):
+            await ctx.respond(message[i*2000:], ephemeral=True)
+        else:
+            await ctx.respond(message[i*2000:(i+1)*2000], ephemeral=True)
+        await asyncio.sleep(1)
 
 def saveUserdb():
     global users
@@ -73,7 +89,6 @@ def isElivated(ctx):
     return False
 
 def hasRole(ctx, role):
-  
     for rolea in ctx.author.roles:
         if rolea.name==role:
             return True
@@ -190,6 +205,9 @@ async def rebuildHirearchy(ctx):
 def wrapper_buildHirearchy(ctx):
     asyncio.run_coroutine_threadsafe(rebuildHirearchy(ctx), bot.loop)
 
+def sanatize_markdown(string):
+    return string.replace("\\","\\\\").replace("*","\\*").replace("_","\\_").replace("~","\\~").replace("`","\\`")
+
 def getUserName(ctx, id):
     id=int(id)
     for user in guild.members:
@@ -199,8 +217,7 @@ def getUserName(ctx, id):
                 name=user.name
             else:
                 name=f"{user.display_name} ({user.name})"
-            name=name.replace("\\","\\\\").replace("*","\\*").replace("_","\\_").replace("~","\\~").replace("`","\\`")
-            return name
+            return sanatize_markdown(name)
     print(f"ERROR: Username with id {id} was unable to be resolved", flush=True)
     #return "This message is just here for testing. (stop looking pls)" #okay, so, cuz you were so nice to look, ill actually accept it. Hi github <3
     wrapper_buildHirearchy(ctx)
@@ -249,6 +266,7 @@ async def kickfrompack(ctx, user: discord.Member):
     await rebuildHirearchy(ctx)
     saveUserdb()
     await ctx.respond(f"{user.mention} has been kicked from your pack", ephemeral=True)
+
 @bot.slash_command(name="buildhirearchy", description="This command is for internal use only.")
 async def buildHirearchy(ctx):
     if not isElivated(ctx):
@@ -280,7 +298,7 @@ async def hirearchy(ctx):
             if users[user]["votesFor"]==single:
                 returnstring+= "\n" + getUserName(ctx, user) + " => " + getUserName(ctx, users[user]["votesFor"])
 
-    await ctx.respond(returnstring, ephemeral=True)
+    await longresponse(ctx, returnstring)
     
 @bot.slash_command(name="bonkme", description="Gives you the NSFW role")
 async def bonkme(ctx):
@@ -456,9 +474,13 @@ async def tests(ctx, string: str):
         print("Exception raised", flush=True)
         await ctx.respond("An exception has been raised", ephemeral=True)
         return
+    elif string=="longmessage":
+        longstring="".join([f"This is a really long message! {i}\n" for i in range(100)])
+        await longresponse(ctx, longstring)
     else:
         await ctx.respond("Unknown test", ephemeral=True)
         return
+
  
 # @bot.slash_command(name="test", description="Test command")
 # async def test(ctx, inputstring: str):
