@@ -8,15 +8,15 @@ import math
 intents=discord.Intents.all()
 bot = discord.Bot(intents=intents)
 
-version="0.1.4"
-jsonversion=3
+version="0.1.5"
+jsonversion=4
 
 userTemplate={
     "votesFor":0,
     "isVoting":False,
     "isOwned":False,
     "isOwner":False,
-    "isVotable":True
+    "consentLeader":True
 }
 def loadUserdb():
     global users, userdb, packs
@@ -53,7 +53,7 @@ async def longresponse(ctx, message):
         await asyncio.sleep(1)
 
 def saveUserdb():
-    global users
+    global users, packs, jsonversion
     try:
         with open("userdb.json","w") as f:
             #print(json.dumps(users, indent=4))
@@ -127,10 +127,25 @@ async def rebuildHirearchy(ctx):
                 exit()
     #remove all references to users that are not in the database
     for user in users:
+        if users[user]["isOwned"]==True and users[user]["isVoting"]==False:
+            print(f"Invalid state: {user} is owned, but has no owner", flush=True)
+            users[user]["isOwned"]=False
         if (not str(users[user]["votesFor"]) in [str(user) for user in users]) and users[user]["isVoting"]==True:
             print(f"Removed reference to {users[user]['votesFor']} from {user}", flush=True)
             users[user]["votesFor"]=0
             users[user]["isVoting"]=False
+
+        if users[user]["isVoting"]:
+            if users[str(users[user]["votesFor"])]["consentLeader"]==False:
+                users[user]["votesFor"]=0
+                users[user]["isVoting"]=False
+                print(f"Removed vote for {users[user]['votesFor']} because they are not votable", flush=True)
+                continue
+            if users[str(users[user]["votesFor"])]["isOwned"]==True:
+                users[user]["votesFor"]=0
+                users[user]["isVoting"]=False
+                print(f"Removed vote for {users[user]['votesFor']} because they are owned", flush=True)
+            
     saveUserdb()
     now=datetime.datetime.now()
     print(f"[{now}] Rebuilding hirearchy because of {ctx.author.name}", flush=True)
@@ -180,7 +195,6 @@ async def rebuildHirearchy(ctx):
             for userb in users:
                 if users[userb]["votesFor"]==int(user):
                     users[userb]["isOwned"]=True
-                    users[userb]["owner"]=int(user)
         else:
             #user is not a pack leader
             #check if they have the role
@@ -223,7 +237,16 @@ def getUserName(ctx, id):
     wrapper_buildHirearchy(ctx)
     saveUserdb()
     return "`An error occured. Please run the command again. If the issue persists, contact Aoki (@kruemmelbande)`"
-        
+
+def getActualUserName(id):
+    if id==0 or id=="0":
+        print("ERROR: Tried to get username of 0", flush=True)
+        return "`Well... So, this is akward... You tried looking for a user, but you didnt specify anybody.... Please tell aoki to fix this, you should never see this message.`"
+    id=int(id)
+    for user in guild.members:
+        if user.id==id:
+            return user.name
+    return f"User with id {id} not found. Either you tried to vote for somebody who is not on the server, or this is a bug. (lets be real, its probably a bug)"
 users={}
 
 @bot.event
@@ -382,6 +405,33 @@ Birb Bot Version: """+version+"""
 Uptime: """ + str(datetime.timedelta(seconds=time.time()-starttime))+"""
 ```""", ephemeral=True)
 
+@bot.slash_command(name="usersettings", description="Change your user settings")
+async def usersettings(ctx, setting: discord.Option(str, choices=["LeaderConsent","removeVote"])):
+    global users
+    if setting=="LeaderConsent":
+        print(f"[{datetime.datetime.now()}] {ctx.author.name} used consentleader", flush=True)
+        if users[str(ctx.author.id)]["consentLeader"]==True:
+            users[str(ctx.author.id)]["consentLeader"]=False
+            await ctx.respond("You are not votable anymore", ephemeral=True)
+        else:
+            users[str(ctx.author.id)]["consentLeader"]=True
+            await ctx.respond("You are now votable", ephemeral=True)
+        await rebuildHirearchy(ctx)
+        saveUserdb()
+    elif setting=="removeVote":
+        print(f"[{datetime.datetime.now()}] {ctx.author.name} used removevote", flush=True)
+        if users[str(ctx.author.id)]["isVoting"]==True:
+            users[str(ctx.author.id)]["isVoting"]=False
+            users[str(ctx.author.id)]["votesFor"]=0
+            await ctx.respond("Your vote has been removed", ephemeral=True)
+        else:
+            await ctx.respond("You are not voting for anyone", ephemeral=True)
+        await rebuildHirearchy(ctx)
+        saveUserdb()
+    else:
+        await ctx.respond("Unknown setting", ephemeral=True)
+        return
+
 @bot.slash_command(name="vote", description="Vote for a user")
 async def vote(ctx, user: discord.Member):
     global users
@@ -402,6 +452,9 @@ async def vote(ctx, user: discord.Member):
     if targetUser.bot:
         await ctx.respond("You cannot vote for a bot", ephemeral=True)
         return
+    if not users[str(targetUser.id)]["consentLeader"]:
+        await ctx.respond("This user has chosen to not be a pack leader", ephemeral=True)
+        return
     if not str(targetUser.id) in users:
         print(f"User {targetUser.id} not in database", flush=True)
         #print([i for i in users], flush=True)
@@ -414,7 +467,8 @@ async def vote(ctx, user: discord.Member):
     if users[str(targetUser.id)]["isOwned"]==True:
         returnstring="You cannot vote for a user who is already in a pack."
         if votes[users[str(targetUser.id)]["votesFor"]]<5:
-            returnstring+=f" The pack this user belongs to however, has a slot available. To join use /vote {getUserName(ctx, users[str(targetUser.id)]['votesFor'])}"
+            print(f"VERBOSE: Target user: {targetUser.id} - Target pack leader: {users[str(targetUser.id)]['votesFor']} what is happening? {users[str(targetUser.id)]}", flush=True)
+            returnstring+=f" The pack this user belongs to however, has a slot available. To join use /vote {getActualUserName(users[str(targetUser.id)]['votesFor'])}"
         await ctx.respond(returnstring, ephemeral=True)
         return
     voter=ctx.author
@@ -461,6 +515,8 @@ async def vote(ctx, user: discord.Member):
     saveUserdb()
     await ctx.respond(returnstring, ephemeral=True)
     return
+
+
 
 @bot.slash_command(name="tests", description="My internal testing command, here for everyone to see, cuz i aint using a debugger")
 async def tests(ctx, string: str):
