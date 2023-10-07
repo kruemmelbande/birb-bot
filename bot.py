@@ -399,6 +399,8 @@ If you are a pack leader and wish to kick a user from your pack, use /kickfrompa
 
 You can show who votes for who, and which packs exist with /hirearchy (all votes are public)
 
+If you wish to revoke your consent to be a pack leader, use /usersettings LeaderConsent, to make yourself unvotable.
+
 For issues or questions, contact Aoki (@kruemmelbande), or open an issue on the <[github page](https://github.com/kruemmelbande/birb-bot/issues)>
 ```
 Birb Bot Version: """+version+"""
